@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 
-project(ParaViewGIS)
+project(ParaViewGEOS)
 
 set(PROJECT_VERSION_MAJOR "0")
 set(PROJECT_VERSION_MINOR "0")

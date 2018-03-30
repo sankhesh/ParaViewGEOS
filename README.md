@@ -1,2 +1,2 @@
-# ParaViewGIS
-ParaView for geospatial data
+# ParaViewGEOS
+ParaView for the GeoSciences
