@@ -40,7 +40,10 @@ include_directories(
 
 #------------------------------------------------------------------------------
 # Add extra library containing custom code for the client.
-pv_qt_wrap_cpp(MOC_BUILT_SRCS pvgMainWindow.h)
+pv_qt_wrap_cpp(MOC_BUILT_SRCS
+  pvgLoadDataReaction.h
+  pvgMainWindow.h
+)
 qt5_wrap_ui(UI_BUILT_SRCS ${PVGIS_RESOURCES_DIR}/UI/pvgMainWindow.ui)
 
 source_group("Generated" FILES
@@ -49,6 +52,8 @@ source_group("Generated" FILES
 )
 
 set(PVGIS_SRC_FILES
+  pvgLoadDataReaction.cxx
+  pvgLoadDataReaction.h
   pvgMainWindow.cxx
   pvgMainWindow.h
   ${MOC_BUILT_SRCS}
