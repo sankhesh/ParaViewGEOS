@@ -36,6 +36,13 @@ public:
    */
   pvgLoadDataReaction(QAction* parent);
 
+  /**
+   * Given a source proxy for a vtkDataObjectAlgorithm (typically, the file
+   * reader), apply a geo transformation and create a trivial producer for the
+   * output without the pipeline.
+   */
+  static void createTrivialProducer(pqPipelineSource* source);
+
 protected:
   /**
    * Called when the action is triggered.
