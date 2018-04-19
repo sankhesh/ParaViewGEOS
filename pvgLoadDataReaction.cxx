@@ -56,7 +56,7 @@ void pvgLoadDataReaction::onTriggered()
   foreach (source, sources)
   {
     emit this->loadedData(source);
-    source->updatePipeline();
+    // source->updatePipeline();
     pvgLoadDataReaction::createTrivialProducer(source);
     // source->getSourceProxy()->UpdatePipelineInformation();
 
@@ -80,6 +80,7 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
   pqObjectBuilder* builder = core->getObjectBuilder();
 
   vtkSMSourceProxy* p = source->getSourceProxy();
+  p->UpdatePipeline();
   vtkDataObjectAlgorithm* d = vtkDataObjectAlgorithm::SafeDownCast(source->getProxy()->GetClientSideObject());
   qDebug() << source->getSMName() << source->getSourceProxy()->GetXMLName() << source->getSourceProxy()->GetDataInformation()->GetDataSetType() << d->GetClassName() << d->GetOutput()->GetClassName();
   switch(p->GetDataInformation()->GetDataSetType())
@@ -109,7 +110,6 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
   END_UNDO_SET();
   vtkTrivialProducer* tp = vtkTrivialProducer::SafeDownCast(s->getProxy()->GetClientSideObject());
   tp->SetOutput(d->GetOutput());
-  s->updatePipeline();
 }
 
 //-----------------------------------------------------------------------------
