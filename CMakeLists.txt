@@ -13,7 +13,9 @@ set(PROJECT_COPYRIGHT_YEAR "2018")
 
 #------------------------------------------------------------------------------
 # Find ParaView
-find_package(ParaView REQUIRED)
+find_package(ParaView REQUIRED
+  COMPONENTS
+  vtkGeovisCore)
 include(${PARAVIEW_USE_FILE})
 if (NOT PARAVIEW_BUILD_QT_GUI)
   message(FATAL_ERROR
@@ -70,7 +72,6 @@ build_paraview_client(
   VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
   VERSION_MINOR ${PROJECT_VERSION_MINOR}
   VERSION_PATCH ${PROJECT_VERSION_PATCH}
-  BUNDLE_ICON "${PVGIS_RESOURCES_DIR}/Icons/pvIcon.icns"
   APPLICATION_ICON "${PVGIS_RESOURCES_DIR}/Icons/pvIcon.ico"
   PVMAIN_WINDOW "pvgMainWindow"
   PVMAIN_WINDOW_INCLUDE "pvgMainWindow.h"
@@ -80,4 +81,5 @@ build_paraview_client(
     ${PVGIS_RESOURCES_DIR}/XML/pvgSources.xml
   SOURCES ${PVGIS_SRC_FILES}
 )
-target_link_libraries(${PROJECT_NAME} LINK_PRIVATE ${Qt_Targets})
+target_link_libraries(${PROJECT_NAME} 
+  LINK_PRIVATE ${Qt_Targets} ${VTK_LIBRARIES})
