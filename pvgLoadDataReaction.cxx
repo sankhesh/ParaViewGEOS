@@ -100,12 +100,17 @@ bool pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
     case VTK_IMAGE_DATA:
     case VTK_UNIFORM_GRID:
     {
-      vtkNew<vtkRasterReprojectionFilter> rrf;
-      rrf->SetInputConnection(d->GetOutputPort());
-      rrf->SetOutputProjection("EPSG:4326");
-      rrf->Update();
-      dobj = rrf->GetOutput();
-      create = true;
+      if (strcmp(p->GetXMLName(), "GDALRasterReader") == 0)
+      {
+        // The incoming dataset will have projection information only if it was
+        // read using the vtkGDALRasterReader
+        vtkNew<vtkRasterReprojectionFilter> rrf;
+        rrf->SetInputConnection(d->GetOutputPort());
+        rrf->SetOutputProjection("EPSG:4326");
+        rrf->Update();
+        dobj = rrf->GetOutput();
+        create = true;
+      }
       break;
     }
     default:
