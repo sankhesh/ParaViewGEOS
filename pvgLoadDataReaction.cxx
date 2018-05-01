@@ -44,6 +44,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkTrivialProducer.h>
 #include <vtkUniformGrid.h>
 #include <vtkSMIntVectorProperty.h>
+#include <vtkXMLPolyDataWriter.h>
+
+// STL includes
+#include <string>
+#include <regex>
 
 // Qt includes
 #include <QDebug>
@@ -91,14 +96,14 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
 
   vtkSMSourceProxy* p = source->getSourceProxy();
   p->UpdatePipeline();
-  vtkDataObjectAlgorithm* d = vtkDataObjectAlgorithm::SafeDownCast(
+  vtkAlgorithm* d = vtkAlgorithm::SafeDownCast(
     source->getProxy()->GetClientSideObject());
   qDebug() << source->getSMName() << source->getSourceProxy()->GetXMLName()
            << source->getSourceProxy()->GetDataInformation()->GetDataSetType()
-           << d->GetClassName() << d->GetOutput()->GetClassName() <<
-           p->GetDataInformation()->GetDataSetType();
-  vtkSmartPointer<vtkDataObject> dobj_orig =
-    vtkDataObject::SafeDownCast(d->GetOutput());
+           << d->GetClassName()// << d->GetOutput()->GetClassName()
+           << p->GetDataInformation()->GetDataSetType();
+  // vtkSmartPointer<vtkDataObject> dobj_orig =
+  //   vtkDataObject::SafeDownCast(source->getProxy()->GetClientSideObject()->GetOutput());
 
   vtkSmartPointer<vtkDataObject> dobj;
   switch (p->GetDataInformation()->GetDataSetType())
@@ -117,18 +122,19 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
     default:
     {
       vtkNew<vtkCompositeDataGeometryFilter> cgf;
-      cgf->SetInputData(dobj_orig);
+      cgf->SetInputConnection(d->GetOutputPort());
+      // cgf->SetInputData(dobj_orig);
       vtkNew<vtkGeoProjection> gcs;
       gcs->SetName("latlong");
       if (strcmp(p->GetXMLName(), "GDALVectorReader") == 0)
       {
         int nL = vtkSMIntVectorProperty::SafeDownCast(p->GetProperty("NumberOfLayers"))->GetElement(0);
-        qDebug() << "Num Layers: " << nL;
         vtkGDALVectorReader* r = vtkGDALVectorReader::SafeDownCast(d);
-        gcs->SetName(r->GetLayerProjection(0));
+        qDebug() << "ParaViewGeo:"<< r->GetLayerProjectionAsProj4(0);
+        gcs->SetPROJ4String(r->GetLayerProjectionAsProj4(0));
       }
       vtkNew<vtkGeoProjection> ocs;
-      ocs->SetName("merc");
+      ocs->SetName("latlong");
       vtkNew<vtkGeoTransform> gt;
       gt->SetSourceProjection(gcs);
       gt->SetDestinationProjection(ocs);
@@ -137,6 +143,10 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
       tf->SetInputConnection(cgf->GetOutputPort());
       // tf->SetInputData(dobj_orig);
       tf->Update();
+      vtkNew<vtkXMLPolyDataWriter> w;
+      w->SetInputConnection(tf->GetOutputPort());
+      w->SetFileName("transformed.vtp");
+      w->Write();
       dobj = tf->GetOutput();
       break;
     }
