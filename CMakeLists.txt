@@ -13,7 +13,9 @@ set(PROJECT_COPYRIGHT_YEAR "2018")
 
 #------------------------------------------------------------------------------
 # Find ParaView
-find_package(ParaView REQUIRED)
+find_package(ParaView REQUIRED
+  COMPONENTS
+  vtkGeovisCore)
 include(${PARAVIEW_USE_FILE})
 if (NOT PARAVIEW_BUILD_QT_GUI)
   message(FATAL_ERROR
@@ -40,7 +42,10 @@ include_directories(
 
 #------------------------------------------------------------------------------
 # Add extra library containing custom code for the client.
-pv_qt_wrap_cpp(MOC_BUILT_SRCS pvgMainWindow.h)
+pv_qt_wrap_cpp(MOC_BUILT_SRCS
+  pvgLoadDataReaction.h
+  pvgMainWindow.h
+)
 qt5_wrap_ui(UI_BUILT_SRCS ${PVGIS_RESOURCES_DIR}/UI/pvgMainWindow.ui)
 
 source_group("Generated" FILES
@@ -49,6 +54,8 @@ source_group("Generated" FILES
 )
 
 set(PVGIS_SRC_FILES
+  pvgLoadDataReaction.cxx
+  pvgLoadDataReaction.h
   pvgMainWindow.cxx
   pvgMainWindow.h
   ${MOC_BUILT_SRCS}
@@ -65,7 +72,6 @@ build_paraview_client(
   VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
   VERSION_MINOR ${PROJECT_VERSION_MINOR}
   VERSION_PATCH ${PROJECT_VERSION_PATCH}
-  BUNDLE_ICON "${PVGIS_RESOURCES_DIR}/Icons/pvIcon.icns"
   APPLICATION_ICON "${PVGIS_RESOURCES_DIR}/Icons/pvIcon.ico"
   PVMAIN_WINDOW "pvgMainWindow"
   PVMAIN_WINDOW_INCLUDE "pvgMainWindow.h"
@@ -75,4 +81,5 @@ build_paraview_client(
     ${PVGIS_RESOURCES_DIR}/XML/pvgSources.xml
   SOURCES ${PVGIS_SRC_FILES}
 )
-target_link_libraries(${PROJECT_NAME} LINK_PRIVATE ${Qt_Targets})
+target_link_libraries(${PROJECT_NAME} 
+  LINK_PRIVATE ${Qt_Targets} ${VTK_LIBRARIES})

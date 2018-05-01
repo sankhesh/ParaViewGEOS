@@ -19,15 +19,18 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ========================================================================*/
-// ParaViewGIS
+// ParaViewGeo includes
+#include "pvgLoadDataReaction.h"
 #include "pvgMainWindow.h"
 #include "ui_pvgMainWindow.h"
 
+// ParaView includes
 #ifdef PARAVIEW_USE_QTHELP
-#include "pqHelpReaction.h"
+#include <pqHelpReaction.h>
 #endif
-#include "pqParaViewBehaviors.h"
-#include "pqParaViewMenuBuilders.h"
+#include <pqParaViewBehaviors.h>
+#include <pqParaViewMenuBuilders.h>
+#include <pqRecentFilesMenu.h>
 
 class pvgMainWindow::pvgInternals : public Ui::pvgMainWindow
 {
@@ -49,15 +52,21 @@ pvgMainWindow::pvgMainWindow()
                    this,
                    SLOT(showHelpForProxy(const QString&, const QString&)));
 
+  /// We do need the recent files menu, so set it up.
+  new pqRecentFilesMenu(*this->Internals->menuRecent_Files,
+                        this->Internals->menuRecent_Files);
+  new pvgLoadDataReaction(this->Internals->actionOpen);
+
   // Populate application menus with actions.
-  pqParaViewMenuBuilders::buildFileMenu(*this->Internals->menuFile);
+  // pqParaViewMenuBuilders::buildFileMenu(*this->Internals->menuFile);
   pqParaViewMenuBuilders::buildEditMenu(*this->Internals->menuEdit);
 
   // Populate sources menu.
   pqParaViewMenuBuilders::buildSourcesMenu(*this->Internals->menuSources, this);
 
   // Populate filters menu.
-  pqParaViewMenuBuilders::buildFiltersMenu(*this->Internals->menuFilters, this);
+  // pqParaViewMenuBuilders::buildFiltersMenu(*this->Internals->menuFilters,
+  // this);
 
   // Populate Tools menu.
   pqParaViewMenuBuilders::buildToolsMenu(*this->Internals->menuTools);
