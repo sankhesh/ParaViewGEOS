@@ -41,7 +41,7 @@ public:
    * reader), apply a geo transformation and create a trivial producer for the
    * output without the pipeline.
    */
-  static void createTrivialProducer(pqPipelineSource* source);
+  static bool createTrivialProducer(pqPipelineSource* source);
 
 protected:
   /**

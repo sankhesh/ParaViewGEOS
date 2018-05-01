@@ -68,31 +68,33 @@ void pvgLoadDataReaction::onTriggered()
   foreach (source, sources)
   {
     emit this->loadedData(source);
-    pvgLoadDataReaction::createTrivialProducer(source);
-
-    // Now that the trivial producer is created, remove the data loaded source
-    QSet<pqPipelineSource*> scs;
-    scs.insert(source);
-    pqDeleteReaction::deleteSources(scs);
+    if (pvgLoadDataReaction::createTrivialProducer(source))
+    {
+      // Now that the trivial producer is created,
+      // remove the original source
+      QSet<pqPipelineSource*> scs;
+      scs.insert(source);
+      pqDeleteReaction::deleteSources(scs);
+    }
   }
 }
 
 //-----------------------------------------------------------------------------
-void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
+bool pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
 {
   if (!source)
   {
-    return;
+    return false;
   }
   pqApplicationCore* core = pqApplicationCore::instance();
   pqObjectBuilder* builder = core->getObjectBuilder();
 
   vtkSMSourceProxy* p = source->getSourceProxy();
   p->UpdatePipeline();
-  vtkAlgorithm* d =
-    vtkAlgorithm::SafeDownCast(source->getProxy()->GetClientSideObject());
+  vtkAlgorithm* d = vtkAlgorithm::SafeDownCast(p->GetClientSideObject());
 
   vtkSmartPointer<vtkDataObject> dobj;
+  bool create = false;
   switch (p->GetDataInformation()->GetDataSetType())
   {
     case VTK_IMAGE_DATA:
@@ -103,29 +105,36 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
       rrf->SetOutputProjection("EPSG:4326");
       rrf->Update();
       dobj = rrf->GetOutput();
+      create = true;
       break;
     }
     default:
     {
-      vtkNew<vtkCompositeDataGeometryFilter> cgf;
-      cgf->SetInputConnection(d->GetOutputPort());
-      vtkNew<vtkGeoProjection> gcs;
-      gcs->SetName("latlong");
       if (strcmp(p->GetXMLName(), "GDALVectorReader") == 0)
       {
         vtkGDALVectorReader* r = vtkGDALVectorReader::SafeDownCast(d);
-        gcs->SetPROJ4String(r->GetLayerProjectionAsProj4(0));
+        const char* proj = r->GetLayerProjectionAsProj4(0);
+        if (proj && strlen(proj))
+        {
+          // If the input has a projection defined, transform it.
+          // Else, pass it along as is.
+          vtkNew<vtkCompositeDataGeometryFilter> cgf;
+          cgf->SetInputConnection(d->GetOutputPort());
+          vtkNew<vtkGeoProjection> ics;
+          ics->SetPROJ4String(proj);
+          vtkNew<vtkGeoProjection> ocs;
+          ocs->SetName("latlong");
+          vtkNew<vtkGeoTransform> gt;
+          gt->SetSourceProjection(ics);
+          gt->SetDestinationProjection(ocs);
+          vtkNew<vtkTransformFilter> tf;
+          tf->SetTransform(gt);
+          tf->SetInputConnection(cgf->GetOutputPort());
+          tf->Update();
+          dobj = tf->GetOutput();
+          create = true;
+        }
       }
-      vtkNew<vtkGeoProjection> ocs;
-      ocs->SetName("latlong");
-      vtkNew<vtkGeoTransform> gt;
-      gt->SetSourceProjection(gcs);
-      gt->SetDestinationProjection(ocs);
-      vtkNew<vtkTransformFilter> tf;
-      tf->SetTransform(gt);
-      tf->SetInputConnection(cgf->GetOutputPort());
-      tf->Update();
-      dobj = tf->GetOutput();
       break;
     }
   }
@@ -134,18 +143,22 @@ void pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
   if (!server)
   {
     qCritical() << "Cannot create reader without an active server.";
-    return;
+    return false;
   }
 
-  QString xmlname("TrivialProducer");
-  QString xmlgroup("sources");
-  BEGIN_UNDO_SET(QString("Create '%1'").arg(xmlname));
-  pqPipelineSource* s = builder->createSource(xmlgroup, xmlname, server);
-  s->rename(source->getSMName());
-  END_UNDO_SET();
-  vtkTrivialProducer* tp =
-    vtkTrivialProducer::SafeDownCast(s->getProxy()->GetClientSideObject());
-  tp->SetOutput(dobj);
+  if (create)
+  {
+    QString xmlname("TrivialProducer");
+    QString xmlgroup("sources");
+    BEGIN_UNDO_SET(QString("Create '%1'").arg(xmlname));
+    pqPipelineSource* s = builder->createSource(xmlgroup, xmlname, server);
+    s->rename(source->getSMName());
+    END_UNDO_SET();
+    vtkTrivialProducer* tp =
+      vtkTrivialProducer::SafeDownCast(s->getProxy()->GetClientSideObject());
+    tp->SetOutput(dobj);
+  }
+  return create;
 }
 
 //-----------------------------------------------------------------------------
