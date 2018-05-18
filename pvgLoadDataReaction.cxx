@@ -139,6 +139,7 @@ bool pvgLoadDataReaction::createTrivialProducer(pqPipelineSource* source)
           dobj = tf->GetOutput();
           create = true;
         }
+        delete[] proj;
       }
       break;
     }
